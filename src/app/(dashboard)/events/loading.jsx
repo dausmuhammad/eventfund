@@ -6,10 +6,14 @@ export default function EventsLoading() {
         Memuat ruang kerja…
       </p>
       <Skeleton className="h-9 w-52" />
-      <Skeleton className="h-36 w-full" />
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Skeleton className="h-64" />
-        <Skeleton className="h-64" />
+      <div className="flex flex-wrap justify-between gap-4">
+        <Skeleton className="h-12 w-80 max-w-full" />
+        <Skeleton className="h-12 w-48" />
+      </div>
+      <div className="space-y-3 rounded-xl border border-border bg-white p-5">
+        <Skeleton className="h-20" />
+        <Skeleton className="h-20" />
+        <Skeleton className="h-20" />
       </div>
     </div>
   );

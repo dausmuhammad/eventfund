@@ -10,6 +10,8 @@ Tiga konsep ditampilkan terpisah: **Anggaran** adalah rencana; **Kas** adalah ua
 
 ## 2. Tokens
 
+Pembaruan tampilan aktif atas instruksi pengguna pada10 November2026: palette dan komposisi akun/event mengikuti UI_TEMPLATE.md serta hasil audit UI_UX_AUDIT.md. Canvas #F3F5FA, foreground #18243B, muted #526078, primary #2854D8/hover #1D40B0, border permukaan #DCE3EE dan border kontrol #7D8BA2. Sidebar232 px #12213D; panel identitas event/auth #19345F. Font system Segoe UI dengan fallback lokal. Nilai tabel berikut merupakan baseline awal; override aktif ini dipakai untuk implementasi akun/event. Light content dan aturan aksesibilitas tetap berlaku. Instruksi terbaru: kalender desktop memakai Popover kompak yang berjangkar ke seluruh field, bukan panel inline; tanggal dan dropdown mobile memakai Drawer dari bawah dengan target minimal44 px. Popover desktop memakai sel hari36 px atas permintaan pemadatan. Field mandatory diberi * merah.
+
 Gunakan CSS variables dan Tailwind theme yang sesuai versi terpilih. shadcn dikonfigurasi `tsx:false`/JavaScript sesuai CLI versi terpasang. Radix dipakai untuk primitive focus/accessibility. Jangan mencampur style komponen dari library lain tanpa kebutuhan.
 
 | Token | Nilai awal | Penggunaan |

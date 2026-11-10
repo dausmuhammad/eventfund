@@ -35,7 +35,11 @@ export function useFormValidation(schema) {
   }
   function failure(error) {
     setFields(error.fields || {});
-    setMessage(error.message || "Koneksi terputus. Isian Anda tetap tersedia.");
+    setMessage(
+      error instanceof TypeError
+        ? "Koneksi terputus. Isian Anda tetap tersedia. Coba simpan kembali."
+        : error.message || "Koneksi terputus. Isian Anda tetap tersedia.",
+    );
     setRequestId(error.requestId || "");
   }
   function validateField(name, values) {

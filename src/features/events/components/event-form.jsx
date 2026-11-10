@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { CheckIcon } from "@radix-ui/react-icons";
+import { CheckIcon, CalendarIcon, LockClosedIcon } from "@radix-ui/react-icons";
 import { eventSchema } from "../schemas";
 import { useFormValidation } from "@/components/shared/use-form-validation";
 import { FormFeedback } from "@/components/shared/form-feedback";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/ui/field";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { UnsavedChangesGuard } from "@/components/shared/unsaved-changes-guard";
+import { StatusBadge } from "@/components/shared/status-badge";
 const subscribe = () => () => {};
 export async function mutate(url, body, method = "POST", key) {
   const csrf = await fetch("/api/csrf", { cache: "no-store" });
@@ -44,6 +46,7 @@ export async function mutate(url, body, method = "POST", key) {
 }
 export function EventForm({ event, duplicate = false }) {
   const router = useRouter();
+  const formRef = useRef(null);
   const hydrated = useSyncExternalStore(
     subscribe,
     () => true,
@@ -51,6 +54,7 @@ export function EventForm({ event, duplicate = false }) {
   );
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [expandedDate, setExpandedDate] = useState(null);
   const [descriptionLength, setDescriptionLength] = useState(
     event?.description?.length || 0,
   );
@@ -85,16 +89,17 @@ export function EventForm({ event, duplicate = false }) {
   }
   return (
     <form
+      ref={formRef}
       noValidate
       method="post"
       onSubmit={submit}
       onBlur={form.onBlur}
       onChange={() => setDirty(true)}
       aria-busy={busy}
-      className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_280px]"
+      className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_248px]"
     >
       <UnsavedChangesGuard dirty={dirty} />
-      <div className="min-w-0 space-y-6">
+      <div className="min-w-0 space-y-4">
         <FormFeedback
           message={form.message}
           fields={form.fields}
@@ -102,20 +107,22 @@ export function EventForm({ event, duplicate = false }) {
         />
         <Card>
           <CardHeader>
-            <CardTitle>Informasi kegiatan</CardTitle>
-            <CardDescription>
-              Beri nama yang mudah dikenali dan jelaskan kegiatan Anda.
-            </CardDescription>
+            <div className="flex items-center gap-3">
+              <span className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-primary">
+                <CalendarIcon className="size-[18px]" aria-hidden="true" />
+              </span>
+              <div>
+                <CardTitle>Detail event</CardTitle>
+                <CardDescription>
+                  Nama kegiatan, jadwal, dan tempat.
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <Field
-              name="name"
-              label="Nama event"
-              error={form.fields.name}
-              description="Gunakan nama kegiatan yang mudah dibedakan dari event lain."
-            >
+          <CardContent className="space-y-4">
+            <Field name="name" label="Nama event" error={form.fields.name}>
               <Input
-                {...form.props("name", true)}
+                {...form.props("name")}
                 required
                 maxLength={200}
                 placeholder="Contoh: Gathering komunitas"
@@ -131,28 +138,24 @@ export function EventForm({ event, duplicate = false }) {
               label="Deskripsi"
               optional
               error={form.fields.description}
-              description={`${descriptionLength.toLocaleString("id-ID")} / 4.000 karakter. Ceritakan tujuan atau kebutuhan kegiatan.`}
+              description={`${descriptionLength.toLocaleString("id-ID")} / 4.000 karakter`}
             >
               <Textarea
                 {...form.props("description", true)}
                 maxLength={4000}
-                rows={5}
-                placeholder="Tujuan kegiatan, kebutuhan persiapan, atau catatan lainnya…"
+                rows={3}
+                placeholder="Catatan atau tujuan kegiatan…"
                 defaultValue={event?.description || ""}
                 onChange={(e) => setDescriptionLength(e.target.value.length)}
               />
             </Field>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Waktu dan tempat</CardTitle>
-            <CardDescription>
-              Belum pasti? Jadwal dan lokasi dapat dilengkapi nanti.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="border-t border-border pt-5">
+              <h3 className="text-sm font-semibold">Waktu dan tempat</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Opsional. Lengkapi saat jadwal sudah pasti.
+              </p>
+            </div>
+            <div className="date-fields">
               {[
                 ["startDate", "Tanggal mulai"],
                 ["endDate", "Tanggal selesai"],
@@ -164,9 +167,22 @@ export function EventForm({ event, duplicate = false }) {
                   optional
                   error={form.fields[name]}
                 >
-                  <Input
+                  <DatePicker
                     {...form.props(name)}
-                    type="date"
+                    label={label}
+                    open={expandedDate === name}
+                    onOpenChange={(open) => setExpandedDate(open ? name : null)}
+                    onValueChange={(value) => {
+                      setDirty(true);
+                      if (form.fields.startDate || form.fields.endDate) {
+                        const values = Object.fromEntries(
+                          new FormData(formRef.current),
+                        );
+                        values[name] = value;
+                        form.validateField("startDate", values);
+                        form.validateField("endDate", values);
+                      }
+                    }}
                     defaultValue={event?.[name]?.slice(0, 10) || ""}
                   />
                 </Field>
@@ -177,10 +193,9 @@ export function EventForm({ event, duplicate = false }) {
               label="Lokasi"
               optional
               error={form.fields.location}
-              description="Nama tempat, alamat singkat, atau tautan pertemuan daring."
             >
               <Input
-                {...form.props("location", true)}
+                {...form.props("location")}
                 maxLength={250}
                 placeholder="Contoh: Aula serbaguna"
                 defaultValue={event?.location || ""}
@@ -195,7 +210,7 @@ export function EventForm({ event, duplicate = false }) {
             disalin pada tahap ini.
           </Alert>
         )}
-        <div className="flex flex-col-reverse justify-between gap-3 rounded-xl border border-border bg-white p-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col-reverse justify-between gap-3 rounded-xl border border-border bg-white px-5 py-4 sm:flex-row sm:items-center">
           <Button variant="ghost" asChild>
             <Link href={event ? `/events/${event.id}` : "/events"}>
               Kembali
@@ -213,37 +228,39 @@ export function EventForm({ event, duplicate = false }) {
           </Button>
         </div>
       </div>
-      <Card className="xl:sticky xl:top-24">
+      <Card className="bg-blue-50/50 xl:sticky xl:top-24">
         <CardHeader>
           <CardTitle>
-            {event && !duplicate ? "Konteks event" : "Siap untuk direncanakan"}
+            {event && !duplicate ? "Tentang event ini" : "Mulai dari rencana"}
           </CardTitle>
           <CardDescription>
             {event && !duplicate
               ? "Perubahan disimpan pada event ini."
-              : "Setiap event baru punya ruang dan pengaturannya sendiri."}
+              : "Cukup beri nama. Detail lainnya bisa menyusul."}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <dl className="space-y-4 text-sm">
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Status awal</dt>
+            <div className="flex flex-wrap justify-between gap-3">
+              <dt className="text-muted-foreground">Status</dt>
               <dd className="font-medium">
-                {event && !duplicate ? event.status : "Draft"}
+                <StatusBadge
+                  status={event && !duplicate ? event.status : "DRAFT"}
+                />
               </dd>
             </div>
-            <div className="flex justify-between gap-3">
+            <div className="flex flex-wrap justify-between gap-3">
               <dt className="text-muted-foreground">Mata uang</dt>
               <dd className="font-medium">IDR</dd>
             </div>
-            <div className="flex justify-between gap-3">
+            <div className="flex flex-wrap justify-between gap-3">
               <dt className="text-muted-foreground">Zona waktu</dt>
               <dd className="font-medium">Asia/Jakarta</dd>
             </div>
           </dl>
-          <p className="mt-6 border-t border-border pt-5 text-xs leading-relaxed text-muted-foreground">
-            Nama event wajib diisi. Isian lainnya boleh dilengkapi kemudian.
-            Data hanya tersedia untuk akun Anda.
+          <p className="mt-5 flex items-start gap-2 border-t border-blue-100 pt-4 text-xs leading-relaxed text-muted-foreground">
+            <LockClosedIcon className="mt-0.5 shrink-0" aria-hidden="true" />
+            Hanya akun Anda yang dapat mengakses event ini.
           </p>
         </CardContent>
       </Card>

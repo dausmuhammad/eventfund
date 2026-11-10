@@ -43,7 +43,7 @@ export function EventList({ events, archived }) {
   );
   return (
     <>
-      <div className="mb-6 flex flex-col justify-between gap-4 rounded-xl border border-border bg-white p-4 sm:flex-row sm:items-end">
+      <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div className="w-full sm:max-w-sm">
           <Label htmlFor="event-search">Cari event</Label>
           <div className="relative">
@@ -53,7 +53,7 @@ export function EventList({ events, archived }) {
             />
             <Input
               id="event-search"
-              placeholder="Cari berdasarkan nama event…"
+              placeholder="Cari nama event…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="pl-9"
@@ -83,7 +83,7 @@ export function EventList({ events, archived }) {
           </Select>
         </div>
       </div>
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-base font-semibold">
           {archived ? "Event dalam arsip" : "Daftar event"}
         </h2>
@@ -92,57 +92,84 @@ export function EventList({ events, archived }) {
         </p>
       </div>
       {filtered.length ? (
-        <ul className="grid gap-4 xl:grid-cols-2">
+        <ul className="overflow-hidden rounded-xl border border-border bg-white divide-y divide-border">
           {filtered.map((event) => (
             <li key={event.id} className="min-w-0">
-              <Card className="relative flex h-full flex-col overflow-hidden p-5 transition-colors hover:border-blue-300 sm:p-6">
-                <div className="mb-5 flex items-start justify-between gap-3">
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-primary">
-                    <CalendarIcon className="size-5" aria-hidden="true" />
-                  </span>
-                  <StatusBadge
-                    status={event.status}
-                    archived={!!event.archivedAt}
-                  />
-                </div>
-                <h3 className="text-xl font-semibold tracking-tight">
-                  <Link
-                    href={`/events/${event.id}`}
-                    className="after:absolute after:inset-0 focus-visible:after:rounded-xl focus-visible:after:outline-2 focus-visible:after:outline-primary"
+              <div className="event-row group relative grid gap-4 p-5 transition-colors hover:bg-slate-50 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:items-center">
+                <div className="flex items-center justify-between sm:contents">
+                  <span
+                    className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-primary"
+                    aria-hidden="true"
                   >
-                    {event.name}
-                  </Link>
-                </h3>
-                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                  {event.description || "Detail kegiatan siap Anda lengkapi."}
-                </p>
-                <div className="mb-5 mt-6 space-y-2 text-sm text-muted-foreground">
-                  <p className="flex items-start gap-2">
-                    <CalendarIcon
-                      aria-hidden="true"
-                      className="mt-0.5 size-4 shrink-0"
+                    {event.startDate ? (
+                      <>
+                        <span className="text-[11px] font-semibold">
+                          {new Intl.DateTimeFormat("id-ID", {
+                            month: "short",
+                            timeZone: "UTC",
+                          }).format(new Date(event.startDate))}
+                        </span>
+                        <span className="text-2xl font-semibold leading-tight">
+                          {new Date(event.startDate).getUTCDate()}
+                        </span>
+                      </>
+                    ) : (
+                      <CalendarIcon className="size-6" />
+                    )}
+                  </span>
+                  <div className="sm:hidden">
+                    <StatusBadge
+                      status={event.status}
+                      archived={!!event.archivedAt}
                     />
-                    {formatDate(event.startDate)}
-                    {event.endDate && ` sampai ${formatDate(event.endDate)}`}
-                  </p>
-                  <p className="flex items-start gap-2">
-                    <DrawingPinIcon
-                      aria-hidden="true"
-                      className="mt-0.5 size-4 shrink-0"
-                    />
-                    {event.location || "Lokasi belum diisi"}
-                  </p>
+                  </div>
                 </div>
-                <div className="mt-auto flex items-center justify-between border-t border-border pt-4 text-sm">
-                  <span className="text-muted-foreground">
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold tracking-tight sm:text-lg">
+                    <Link
+                      href={`/events/${event.id}`}
+                      className="after:absolute after:inset-0 focus-visible:after:rounded-xl focus-visible:after:outline-2 focus-visible:after:outline-primary"
+                    >
+                      {event.name}
+                    </Link>
+                  </h3>
+                  <p className="mt-1 line-clamp-1 text-sm leading-relaxed text-muted-foreground">
+                    {event.description || "Detail kegiatan siap Anda lengkapi."}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+                    <p className="flex items-start gap-2">
+                      <CalendarIcon
+                        aria-hidden="true"
+                        className="size-4 shrink-0"
+                      />
+                      {formatDate(event.startDate)}
+                      {event.endDate && ` sampai ${formatDate(event.endDate)}`}
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <DrawingPinIcon
+                        aria-hidden="true"
+                        className="size-4 shrink-0"
+                      />
+                      {event.location || "Lokasi belum diisi"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-sm sm:flex-col sm:items-end sm:gap-4 sm:border-0 sm:pt-0">
+                  <div className="hidden sm:block">
+                    <StatusBadge
+                      status={event.status}
+                      archived={!!event.archivedAt}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground sm:hidden">
                     IDR · Asia/Jakarta
                   </span>
-                  <span className="flex items-center gap-2 font-semibold text-primary">
+                  <span className="event-open flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                     Buka event
                     <ArrowRightIcon aria-hidden="true" />
                   </span>
                 </div>
-              </Card>
+              </div>
             </li>
           ))}
         </ul>

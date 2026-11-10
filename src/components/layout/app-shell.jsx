@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "./logout-button";
 import { cn } from "@/lib/utils";
+import { Brand } from "@/components/shared/brand";
 const links = [
   { href: "/events", label: "Event saya", icon: CalendarIcon },
   { href: "/events/new", label: "Event baru", icon: PlusIcon },
@@ -35,7 +36,8 @@ function Navigation({ mobile = false, onNavigate }) {
         const active = href.includes("?")
           ? path === "/events" && query.get("archived") === "true"
           : href === "/events"
-            ? path === "/events" && query.get("archived") !== "true"
+            ? (path === "/events" && query.get("archived") !== "true") ||
+              (path.startsWith("/events/") && path !== "/events/new")
             : path === href;
         const link = (
           <Link
@@ -43,20 +45,14 @@ function Navigation({ mobile = false, onNavigate }) {
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+              "flex min-h-12 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
               active
-                ? "bg-blue-50 text-primary"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
+                ? "bg-[#254681] text-white ring-1 ring-inset ring-blue-300/25"
+                : "text-slate-300 hover:bg-white/10 hover:text-white",
             )}
           >
             <Icon className="size-[18px] shrink-0" aria-hidden="true" />
             {label}
-            {active && (
-              <span
-                className="ml-auto h-5 w-1 rounded bg-primary"
-                aria-hidden="true"
-              />
-            )}
           </Link>
         );
         return mobile ? (
@@ -72,6 +68,7 @@ function Navigation({ mobile = false, onNavigate }) {
 }
 export function AppShell({ user, children }) {
   const path = usePathname();
+  const query = useSearchParams();
   const [open, setOpen] = useState(false);
   const section =
     path === "/events/new"
@@ -80,49 +77,46 @@ export function AppShell({ user, children }) {
         ? "Pengaturan"
         : path.endsWith("/duplicate")
           ? "Duplikasi"
-          : "Ruang kerja";
+          : path === "/events"
+            ? query.get("archived") === "true"
+              ? "Arsip"
+              : "Ruang kerja"
+            : "Detail event";
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-white px-5 py-7 lg:flex">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[232px_minmax(0,1fr)]">
+      <aside className="app-sidebar fixed inset-y-0 left-0 z-30 hidden w-[232px] flex-col overflow-y-auto border-r border-slate-800 px-4 py-6 text-white lg:flex">
         <Link
           href="/events"
-          className="mb-10 inline-flex min-h-11 items-center text-2xl font-bold tracking-tight"
+          className="mb-7 inline-flex min-h-11 items-center px-2"
         >
-          EventFund<span className="text-primary">.</span>
+          <Brand />
         </Link>
-        <p className="mb-3 px-3 text-xs font-semibold text-muted-foreground">
-          Ruang kerja
+        <div className="mb-6 flex items-center gap-3 rounded-lg border border-white/15 bg-white/5 p-3">
+          <span
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sm font-semibold"
+            aria-hidden="true"
+          >
+            {user.name.slice(0, 2).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{user.name}</p>
+            <p className="mt-0.5 text-xs text-slate-300">Ruang kerja pribadi</p>
+          </div>
+        </div>
+        <p className="mb-2 px-3 text-xs font-medium text-slate-400">
+          Kelola kegiatan
         </p>
         <Navigation />
         <div className="mt-auto space-y-5 pt-10">
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-            <p className="text-sm font-semibold text-blue-900">
-              Rencana yang tertata.
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-blue-900">
-              Mulai dari detail event. Penyusunan anggaran menjadi langkah
-              berikutnya.
-            </p>
-          </div>
-          <div className="flex min-w-0 items-center gap-3 border-t border-border pt-5">
-            <span
-              className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-semibold"
-              aria-hidden="true"
-            >
-              {user.name.slice(0, 2).toUpperCase()}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{user.name}</p>
-              <p className="text-xs text-muted-foreground">
-                Pemilik ruang kerja
-              </p>
-            </div>
+          <div className="border-t border-white/15 px-2 pt-4">
+            <p className="text-xs text-slate-300">EventFund untuk bendahara</p>
+            <p className="mt-1 text-xs text-slate-400">IDR · Asia/Jakarta</p>
           </div>
         </div>
       </aside>
       <div className="min-w-0 pb-20 md:pb-0 lg:col-start-2">
         <header className="sticky top-0 z-30 border-b border-border bg-white">
-          <div className="mx-auto flex min-h-[76px] max-w-[1440px] items-center justify-between gap-3 px-5 sm:px-8 lg:px-10">
+          <div className="mx-auto flex min-h-16 max-w-[1360px] flex-wrap items-center justify-between gap-3 px-[16px] py-2 sm:px-7">
             <div className="flex min-w-0 items-center gap-3">
               <div className="lg:hidden">
                 <Sheet open={open} onOpenChange={setOpen}>
@@ -139,7 +133,7 @@ export function AppShell({ user, children }) {
                     title="EventFund"
                     description="Kelola kegiatan di ruang kerja Anda."
                   >
-                    <div className="mt-7">
+                    <div className="app-sidebar mt-4 rounded-xl p-3">
                       <Navigation mobile />
                     </div>
                     <p className="mt-auto pt-8 text-sm text-muted-foreground">
@@ -148,8 +142,8 @@ export function AppShell({ user, children }) {
                   </SheetContent>
                 </Sheet>
               </div>
-              <Link href="/events" className="text-lg font-bold lg:hidden">
-                EventFund<span className="text-primary">.</span>
+              <Link href="/events" className="lg:hidden">
+                <Brand className="gap-2 text-base [&_svg]:size-8" />
               </Link>
               <div className="hidden items-center gap-3 text-sm text-muted-foreground sm:flex">
                 <span className="lg:hidden" aria-hidden="true">
@@ -173,7 +167,7 @@ export function AppShell({ user, children }) {
         </header>
         <main
           id="main"
-          className="mx-auto min-h-[calc(100dvh-150px)] max-w-[1440px] px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10"
+          className="mx-auto min-h-[calc(100dvh-120px)] max-w-[1360px] px-[16px] py-6 sm:px-7 sm:py-7"
         >
           {children}
         </main>
@@ -193,7 +187,18 @@ export function AppShell({ user, children }) {
             <Link
               key={href}
               href={href}
-              className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-blue-50 hover:text-primary"
+              aria-current={
+                (
+                  href === "/events"
+                    ? path === "/events" && query.get("archived") !== "true"
+                    : href.includes("?")
+                      ? path === "/events" && query.get("archived") === "true"
+                      : path === href
+                )
+                  ? "page"
+                  : undefined
+              }
+              className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-blue-50 hover:text-primary aria-[current=page]:bg-blue-50 aria-[current=page]:text-primary"
             >
               <Icon className="size-5" aria-hidden="true" />
               {label}

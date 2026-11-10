@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmationDialog } from "@/components/ui/alert-dialog";
 export function UnsavedChangesGuard({ dirty }) {
   const router = useRouter();
   const [destination, setDestination] = useState(null);
+  const returnFocusRef = useRef(null);
   useEffect(() => {
     if (!dirty) return;
     const unload = (event) => {
@@ -38,6 +39,7 @@ export function UnsavedChangesGuard({ dirty }) {
         return;
       event.preventDefault();
       event.stopPropagation();
+      returnFocusRef.current = anchor;
       setDestination(url.pathname + url.search + url.hash);
     };
     window.addEventListener("beforeunload", unload);
@@ -49,6 +51,7 @@ export function UnsavedChangesGuard({ dirty }) {
   }, [dirty]);
   return (
     <ConfirmationDialog
+      returnFocusRef={returnFocusRef}
       open={!!destination}
       onOpenChange={(open) => {
         if (!open) setDestination(null);

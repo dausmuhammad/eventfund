@@ -4,6 +4,24 @@ import { PrismaClient } from "@prisma/client";
 import { hash } from "argon2";
 import { assertTestDatabase } from "../../scripts/test-database.js";
 assertTestDatabase(process.env.DATABASE_URL);
+async function enterDate(page, label, value) {
+  const trigger = page.getByRole("button", { name: label, exact: true });
+  if ((await trigger.getAttribute("aria-expanded")) !== "true")
+    await trigger.click();
+  const panel = page.getByRole("dialog", {
+    name: `Kalender ${label.toLowerCase()}`,
+    exact: true,
+  });
+  await panel
+    .getByRole("button", { name: "Ketik tanggal", exact: true })
+    .click();
+  await panel
+    .getByRole("textbox", { name: `Ketik ${label.toLowerCase()}`, exact: true })
+    .fill(value);
+  await panel.getByRole("button", { name: "Selesai", exact: true }).click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(panel).toHaveCount(0);
+}
 test("event create, edit, switcher, duplicate, archive, ownership and CSRF", async ({
   page,
 }) => {
@@ -56,6 +74,15 @@ test("event create, edit, switcher, duplicate, archive, ownership and CSRF", asy
     await expect(
       page.getByLabel("Nama event", { exact: true }),
     ).toHaveAttribute("aria-invalid", "true");
+    expect(
+      await page
+        .getByLabel("Nama event", { exact: true })
+        .evaluate((input) =>
+          input.labels[0].parentElement
+            .querySelector(".text-danger")
+            ?.textContent.trim(),
+        ),
+    ).toBe("*");
     await page.getByLabel("Nama event").fill("Rapat panitia");
     await page.getByRole("link", { name: "Kembali", exact: true }).click();
     await expect(page.getByRole("alertdialog")).toContainText(
@@ -65,20 +92,174 @@ test("event create, edit, switcher, duplicate, archive, ownership and CSRF", asy
       .getByRole("alertdialog")
       .getByRole("button", { name: "Kembali", exact: true })
       .click();
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Kembali", exact: true }),
+    ).toBeFocused();
     await expect(page.getByLabel("Nama event", { exact: true })).toHaveValue(
       "Rapat panitia",
     );
     await page.getByLabel("Nama event").focus();
     await page.keyboard.press("Tab");
     await expect(page.getByLabel("Deskripsi")).toBeFocused();
-    await page.getByLabel("Tanggal mulai").fill("2026-11-12");
-    await page.getByLabel("Tanggal selesai").fill("2026-11-11");
+    await enterDate(page, "Tanggal mulai", "2026-11-12");
+    await enterDate(page, "Tanggal selesai", "2026-11-11");
     await page.getByRole("button", { name: "Buat event", exact: true }).click();
     await expect(
       page.getByRole("alert").filter({ hasText: "Tanggal selesai" }),
     ).toBeVisible();
-    await page.getByLabel("Tanggal selesai").fill("2026-11-13");
+    await enterDate(page, "Tanggal selesai", "2026-11-13");
+    await page
+      .getByRole("button", { name: "Tanggal mulai", exact: true })
+      .click({ position: { x: 12, y: 20 } });
+    const calendar = page.getByRole("dialog", {
+      name: "Kalender tanggal mulai",
+      exact: true,
+    });
+    await expect(calendar).toBeVisible();
+    await calendar
+      .getByRole("button", { name: "Ketik tanggal", exact: true })
+      .click();
+    await expect(
+      calendar.getByRole("textbox", {
+        name: "Ketik tanggal mulai",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await calendar
+      .getByRole("button", { name: "Lihat kalender", exact: true })
+      .click();
+    await calendar.getByRole("button", { name: "Bulan berikutnya" }).click();
+    await calendar.getByRole("button", { name: "Bulan sebelumnya" }).click();
+    await calendar
+      .locator(".rdp-day_button")
+      .filter({ hasText: /^14$/ })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Tanggal mulai", exact: true }),
+    ).toContainText("14 November 2026");
+    await enterDate(page, "Tanggal mulai", "2026-11-12");
+    const locationTopBefore = await page
+      .getByLabel("Lokasi")
+      .evaluate((input) => input.getBoundingClientRect().top + window.scrollY);
+    await page
+      .getByRole("button", { name: "Tanggal mulai", exact: true })
+      .click();
+    const panelBounds = await calendar.boundingBox();
+    const locationTopAfter = await page
+      .getByLabel("Lokasi")
+      .evaluate((input) => input.getBoundingClientRect().top + window.scrollY);
+    expect(locationTopAfter).toBeCloseTo(locationTopBefore, 0);
+    expect(
+      await calendar.evaluate((panel) => panel.closest("form") === null),
+    ).toBe(true);
+    if (test.info().project.name === "mobile") {
+      await expect(calendar).toHaveAttribute("data-surface", "drawer");
+      await expect
+        .poll(async () => {
+          const bounds = await calendar.boundingBox();
+          return Math.round(bounds.y + bounds.height);
+        })
+        .toBe(page.viewportSize().height);
+    } else {
+      await expect(calendar).toHaveAttribute("data-surface", "popover");
+      expect(panelBounds.width).toBeLessThanOrEqual(300);
+      const triggerBounds = await page
+        .getByRole("button", { name: "Tanggal mulai", exact: true })
+        .boundingBox();
+      expect(Math.abs(panelBounds.x - triggerBounds.x)).toBeLessThanOrEqual(12);
+      expect(
+        panelBounds.y >= triggerBounds.y + triggerBounds.height ||
+          panelBounds.y + panelBounds.height <= triggerBounds.y,
+      ).toBe(true);
+    }
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    const originalViewport = page.viewportSize();
+    for (const width of [360, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        JSON.stringify(
+          await page.evaluate(() =>
+            [...document.querySelectorAll("body *")]
+              .filter(
+                (element) =>
+                  element.getBoundingClientRect().right > innerWidth + 1,
+              )
+              .slice(0, 12)
+              .map((element) => ({
+                tag: element.tagName,
+                className: element.getAttribute("class"),
+                width: element.getBoundingClientRect().width,
+                right: element.getBoundingClientRect().right,
+              })),
+          ),
+        ),
+      ).toBe(true);
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = "200%";
+      });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = "";
+      });
+    }
+    await page.setViewportSize(originalViewport);
+    await expect(calendar).toHaveAttribute("data-surface", test.info().project.name === "mobile" ? "drawer" : "popover");
+    await page.screenshot({
+      path: `test-results/calendar-${test.info().project.name}.png`,
+      fullPage: false,
+      animations: "disabled",
+    });
+    await calendar
+      .getByRole("button", { name: "Tutup kalender", exact: true })
+      .click();
+    await expect(calendar).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Tanggal mulai", exact: true })
+      .click();
+    await calendar
+      .getByRole("button", { name: "Tutup kalender", exact: true })
+      .focus();
+    await page.keyboard.press("Escape");
+    await expect(calendar).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Tanggal mulai", exact: true }),
+    ).toBeFocused();
+    await page
+      .getByRole("button", { name: "Tanggal mulai", exact: true })
+      .click();
+    await calendar
+      .getByRole("button", { name: "Kosongkan", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Tanggal mulai", exact: true }),
+    ).toContainText("Pilih tanggal");
+    await enterDate(page, "Tanggal mulai", "2026-11-12");
+    await page
+      .getByRole("button", { name: "Tanggal mulai", exact: true })
+      .click();
+    await calendar
+      .getByRole("button", { name: "Hari ini", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Tanggal mulai", exact: true }),
+    ).not.toContainText("Pilih tanggal");
+    await enterDate(page, "Tanggal mulai", "2026-11-12");
     await page.getByLabel("Lokasi").fill("Aula");
+    await expect(
+      page.getByRole("button", { name: "Tanggal selesai", exact: true }),
+    ).toHaveAttribute("aria-invalid", "false");
     await page.getByLabel("Deskripsi").fill("Persiapan kegiatan bersama.");
     await expect(
       page
@@ -89,7 +270,23 @@ test("event create, edit, switcher, duplicate, archive, ownership and CSRF", asy
     await page.screenshot({
       path: `test-results/event-form-${test.info().project.name}.png`,
       fullPage: true,
+      animations: "disabled",
     });
+    await page.route("**/api/events", async (route) => {
+      if (route.request().method() === "POST") await route.abort("failed");
+      else await route.continue();
+    });
+    await page.getByRole("button", { name: "Buat event", exact: true }).click();
+    await expect(
+      page
+        .getByRole("alert")
+        .filter({ hasText: "Koneksi terputus. Isian Anda tetap tersedia." }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Nama event")).toHaveValue("Rapat panitia");
+    await expect(
+      page.getByRole("button", { name: "Tanggal mulai", exact: true }),
+    ).toContainText("12 November 2026");
+    await page.unroute("**/api/events");
     await page.getByRole("button", { name: "Buat event", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: "Rapat panitia", exact: true }),
@@ -100,11 +297,25 @@ test("event create, edit, switcher, duplicate, archive, ownership and CSRF", asy
     ).toBe(1);
     await page.getByRole("link", { name: "Pengaturan event" }).click();
     await page.getByLabel("Nama event").fill("Rapat panitia utama");
+    await page.screenshot({
+      path: `test-results/settings-${test.info().project.name}.png`,
+      fullPage: true,
+    });
     await page.getByRole("button", { name: "Simpan perubahan" }).click();
     await expect(
       page.getByRole("heading", { name: "Rapat panitia utama", exact: true }),
     ).toBeVisible();
     await page.getByRole("link", { name: "Duplikasi event" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Duplikasi event", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Buat salinan event", exact: true }),
+    ).toBeEnabled();
+    await page.screenshot({
+      path: `test-results/duplicate-${test.info().project.name}.png`,
+      fullPage: true,
+    });
     await page.getByRole("button", { name: "Buat salinan event" }).click();
     await expect(
       page.getByRole("heading", {
@@ -114,6 +325,13 @@ test("event create, edit, switcher, duplicate, archive, ownership and CSRF", asy
     ).toBeVisible();
     await page.getByText("Ganti event", { exact: true }).focus();
     await page.keyboard.press("Enter");
+    await expect(
+      page.getByRole("dialog", { name: "Ganti event", exact: true }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: `test-results/switcher-${test.info().project.name}.png`,
+      fullPage: false,
+    });
     await page
       .getByRole("link", { name: "Rapat panitia utama", exact: true })
       .click();
@@ -201,6 +419,10 @@ test("event create, edit, switcher, duplicate, archive, ownership and CSRF", asy
       .fill("Kegiatan dibatalkan panitia");
     await page.getByRole("checkbox").check();
     await page.getByRole("button", { name: "Terapkan tindakan" }).click();
+    await page.screenshot({
+      path: `test-results/lifecycle-${test.info().project.name}.png`,
+      fullPage: false,
+    });
     await page
       .getByRole("alertdialog")
       .getByRole("button", { name: "Kembali", exact: true })
@@ -244,12 +466,40 @@ test("event create, edit, switcher, duplicate, archive, ownership and CSRF", asy
       page.getByRole("heading", { name: "Event tidak ditemukan" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Hapus filter" }).click();
+    await page.screenshot({
+      path: `test-results/event-list-all-${test.info().project.name}.png`,
+      fullPage: true,
+    });
     await expect(
       page.getByRole("link", { name: "Rapat panitia utama", exact: true }),
     ).toBeVisible();
     await page
       .getByRole("combobox", { name: "Status event", exact: true })
       .click();
+    if (test.info().project.name === "mobile") {
+      const drawer = page.getByRole("dialog", {
+        name: "Status event",
+        exact: true,
+      });
+      await expect(drawer).toHaveAttribute("data-surface", "drawer");
+      await expect
+        .poll(async () => {
+          const bounds = await drawer.boundingBox();
+          return Math.round(bounds.y + bounds.height);
+        })
+        .toBe(page.viewportSize().height);
+      await drawer
+        .getByRole("option", { name: "Semua status", exact: true })
+        .focus();
+      await page.keyboard.press("ArrowDown");
+      await expect(
+        drawer.getByRole("option", { name: "Draft", exact: true }),
+      ).toBeFocused();
+      await page.screenshot({
+        path: "test-results/select-drawer-mobile.png",
+        fullPage: false,
+      });
+    }
     await page.getByRole("option", { name: "Dibatalkan", exact: true }).click();
     await expect(
       page.getByRole("link", {

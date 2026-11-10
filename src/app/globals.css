@@ -1,12 +1,132 @@
 @import "tailwindcss";
+@import "react-day-picker/style.css";
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --primary: #1d4ed8;
-  --primary-hover: #1e40af;
-  --muted-foreground: #475569;
-  --border: #cbd5e1;
+  --background: #f3f5fa;
+  --foreground: #18243b;
+  --primary: #2854d8;
+  --primary-hover: #1d40b0;
+  --muted-foreground: #526078;
+  --border: #dce3ee;
+  --input-border: #7d8ba2;
   --danger: #b91c1c;
+}
+.event-calendar {
+  --rdp-accent-color: #1d4ed8;
+  --rdp-accent-background-color: #eff6ff;
+  --rdp-day-height: 44px;
+  --rdp-day-width: 44px;
+  --rdp-day_button-height: 44px;
+  --rdp-day_button-width: 44px;
+  --rdp-day_button-border-radius: 0.5rem;
+  --rdp-nav_button-height: 44px;
+  --rdp-nav_button-width: 44px;
+  font-size: 0.875rem;
+  margin-inline: auto;
+  width: fit-content;
+}
+.date-trigger {
+  min-height: 48px;
+}
+@keyframes drawer-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes drawer-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+.drawer-content[data-state="open"] {
+  animation: drawer-in 180ms ease-out;
+}
+.drawer-content[data-state="closed"] {
+  animation: drawer-out 140ms ease-in;
+}
+.date-fields {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 336px), 1fr));
+  align-items: start;
+}
+.app-sidebar {
+  background: #12213d;
+}
+.event-row:hover .event-open {
+  color: var(--primary);
+}
+.event-summary-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+  gap: 8px;
+}
+@media (min-width: 640px) {
+  .event-summary-actions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+.event-calendar .rdp-day_button:hover {
+  background: #eff6ff;
+}
+.event-calendar .rdp-selected .rdp-day_button {
+  background: #1d4ed8;
+  color: white;
+  border-color: #1d4ed8;
+}
+.event-calendar .rdp-chevron {
+  fill: #1d4ed8;
+}
+.event-calendar .rdp-caption_label {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.3;
+}
+.event-calendar .rdp-month_caption {
+  min-height: 44px;
+  height: auto;
+}
+.event-calendar .rdp-month_grid {
+  table-layout: fixed;
+  width: 308px;
+}
+.event-calendar .rdp-weekday {
+  width: 44px;
+  overflow-wrap: anywhere;
+}
+.picker-popover .event-calendar {
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-day_button-height: 36px;
+  --rdp-day_button-width: 36px;
+  --rdp-nav_button-height: 36px;
+  --rdp-nav_button-width: 36px;
+  --rdp-nav-height: 36px;
+  font-size: 0.8125rem;
+}
+.picker-popover .rdp-month_grid {
+  width: 252px;
+}
+.picker-popover .rdp-weekday {
+  width: 36px;
+}
+.picker-popover .rdp-month_caption {
+  min-height: 36px;
+}
+.picker-popover .calendar-commands {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.picker-popover .calendar-commands button {
+  min-height: 32px;
+  padding: 4px 6px;
+  font-size: 0.75rem;
 }
 @theme inline {
   --color-background: var(--background);
@@ -15,6 +135,7 @@
   --color-primary-hover: var(--primary-hover);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-input-border: var(--input-border);
   --color-danger: var(--danger);
 }
 @layer base {
@@ -26,7 +147,12 @@
     margin: 0;
     background: var(--background);
     color: var(--foreground);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family:
+      "Segoe UI",
+      -apple-system,
+      BlinkMacSystemFont,
+      Arial,
+      sans-serif;
     font-variant-numeric: tabular-nums;
   }
   a[href],
@@ -42,11 +168,18 @@
     cursor: not-allowed;
   }
   :focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid #2854d8;
     outline-offset: 3px;
   }
   a {
     text-underline-offset: 3px;
+  }
+  ::selection {
+    background: #dbe6ff;
+    color: #18243b;
+  }
+  html {
+    scroll-padding-block: 88px;
   }
   @media (prefers-reduced-motion: reduce) {
     *,

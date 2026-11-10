@@ -9,7 +9,7 @@ export default async function NewEventPage() {
       <PageHeading
         eyebrow="Kegiatan baru"
         title="Buat event"
-        description="Mulai dengan nama kegiatan. Detail lainnya bisa Anda lengkapi sambil menyiapkan rencana."
+        description="Beri nama kegiatan Anda. Jadwal dan detail lainnya bisa menyusul."
       />
       <EventForm />
     </>

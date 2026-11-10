@@ -87,13 +87,13 @@ export function AuthForm({ register = false }) {
   }
   return (
     <>
-      <p className="mb-2 text-sm font-medium text-primary">
+      <p className="mb-2 text-xs font-medium text-muted-foreground">
         {register ? "Mulai dengan akun Anda" : "Selamat datang kembali"}
       </p>
-      <h2 className="text-3xl font-semibold tracking-tight">
+      <h1 className="text-[1.75rem] font-semibold tracking-tight">
         {register ? "Buat akun" : "Masuk ke akun"}
-      </h2>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+      </h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {register
           ? "Siapkan ruang kerja pribadi untuk kegiatan Anda."
           : "Masuk untuk melanjutkan persiapan dan pengelolaan event."}
@@ -104,7 +104,7 @@ export function AuthForm({ register = false }) {
         action={register ? "/api/register" : "/api/auth/callback/credentials"}
         onSubmit={submit}
         onBlur={form.onBlur}
-        className="mt-8 space-y-5"
+        className="mt-6 space-y-4"
         aria-busy={busy}
       >
         <FormFeedback
@@ -170,7 +170,7 @@ export function AuthForm({ register = false }) {
               <Button
                 type="button"
                 variant="ghost"
-                className="absolute right-px top-px min-h-11 px-3"
+                className="absolute right-0 top-0 size-12 px-0"
                 aria-label={`${visible[name] ? "Sembunyikan" : "Tampilkan"} ${label.toLowerCase()}`}
                 aria-pressed={!!visible[name]}
                 onClick={() =>

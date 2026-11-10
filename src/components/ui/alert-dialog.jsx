@@ -11,6 +11,7 @@ export function ConfirmationDialog({
   busy,
   destructive = false,
   confirmLabel = "Konfirmasi tindakan",
+  returnFocusRef,
   children,
 }) {
   const returnFocus = useRef(null);
@@ -24,7 +25,8 @@ export function ConfirmationDialog({
           }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            if (returnFocus.current?.isConnected) returnFocus.current.focus();
+            const target = returnFocusRef?.current || returnFocus.current;
+            if (target?.isConnected) target.focus();
           }}
           onEscapeKeyDown={(event) => {
             if (busy) event.preventDefault();

@@ -83,7 +83,7 @@ export function EventControls({ event }) {
     }
   }
   return (
-    <Card className="mt-8 border-red-200">
+    <Card className="mt-6 border-red-200">
       <CardHeader>
         <CardTitle>Status dan arsip</CardTitle>
         <CardDescription>
@@ -95,7 +95,7 @@ export function EventControls({ event }) {
         <form
           noValidate
           onSubmit={submit}
-          className="max-w-2xl space-y-5"
+          className="max-w-2xl space-y-4"
           aria-busy={busy}
         >
           <FormFeedback
@@ -132,6 +132,7 @@ export function EventControls({ event }) {
               description="Jelaskan alasannya agar perubahan tetap dapat dipahami di kemudian hari."
             >
               <Textarea
+                required
                 {...form.props("reason", true)}
                 maxLength={1000}
                 value={reason}
@@ -162,6 +163,12 @@ export function EventControls({ event }) {
                 >
                   Saya memahami pembatalan mempertahankan histori dan tidak
                   membalik transaksi.
+                  <span
+                    className="ml-1 font-semibold text-danger"
+                    aria-hidden="true"
+                  >
+                    *
+                  </span>
                 </label>
               </div>
               {form.fields.acknowledged && (

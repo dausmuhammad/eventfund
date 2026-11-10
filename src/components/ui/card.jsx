@@ -9,12 +9,7 @@ export function Card({ className, ...props }) {
   );
 }
 export function CardHeader({ className, ...props }) {
-  return (
-    <div
-      className={cn("border-b border-border p-5 sm:px-7 sm:py-6", className)}
-      {...props}
-    />
-  );
+  return <div className={cn("px-5 pb-0 pt-5", className)} {...props} />;
 }
 export function CardTitle({ className, ...props }) {
   return (
@@ -36,5 +31,5 @@ export function CardDescription({ className, ...props }) {
   );
 }
 export function CardContent({ className, ...props }) {
-  return <div className={cn("p-5 sm:p-7", className)} {...props} />;
+  return <div className={cn("p-5", className)} {...props} />;
 }
