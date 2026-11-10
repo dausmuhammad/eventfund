@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:17.11
+    environment:
+      POSTGRES_USER: eventfund
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: eventfund
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - eventfund_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eventfund -d eventfund"]
+      interval: 5s
+      retries: 10
+volumes:
+  eventfund_pg:
